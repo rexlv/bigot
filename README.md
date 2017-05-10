@@ -1,0 +1,2 @@
+# bigot
+go library
