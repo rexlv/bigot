@@ -1,5 +1,5 @@
 package provider
 
 type Provider interface {
-	Read() (interface{}, error)
+	Read() (map[string]interface{}, error)
 }

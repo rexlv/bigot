@@ -9,7 +9,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rexlv/bigot/provider"
 	"github.com/rexlv/bigot/provider/file"
-	"github.com/spf13/cast"
+	"github.com/rexlv/gutil/cast"
+	"github.com/rexlv/gutil/gmap"
 )
 
 // Bigot bigot
@@ -18,13 +19,22 @@ type Bigot struct {
 
 	mu sync.RWMutex
 
-	data     interface{}
+	data     map[string]interface{}
 	keyDelim string
 }
 
 // New returns Bigot instance
 func New(p provider.Provider) *Bigot {
-	return &Bigot{}
+	return &Bigot{
+		provider: p,
+		data:     make(map[string]interface{}),
+		keyDelim: ".",
+	}
+}
+
+// SetKeyDelim set delim for key
+func (b *Bigot) SetKeyDelim(delim string) {
+	b.keyDelim = delim
 }
 
 // InitFromFile returns
@@ -34,13 +44,9 @@ func InitFromFile(path string) *Bigot {
 }
 
 // ReadInConfig load config from provider
-func (b *Bigot) ReadInConfig(delim string) (err error) {
+func (b *Bigot) ReadInConfig() (err error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if delim == "" {
-		delim = "."
-	}
-	b.keyDelim = delim
 	data, err := b.provider.Read()
 	if err != nil {
 		return err
@@ -116,6 +122,10 @@ func (b *Bigot) GetStringMapString(key string) map[string]string {
 	return cast.ToStringMapString(b.Get(key))
 }
 
+func (b *Bigot) GetSliceStringMap(key string) []map[string]interface{} {
+	return cast.ToSliceStringMap(b.Get(key))
+}
+
 // GetStringMapStringSlice returns the value associated with the key as a map to a slice of strings.
 func (b *Bigot) GetStringMapStringSlice(key string) map[string][]string {
 	return cast.ToStringMapStringSlice(b.Get(key))
@@ -131,6 +141,6 @@ func (b *Bigot) UnmarshalKey(key string, rawVal interface{}) error {
 
 func (b *Bigot) find(key string) interface{} {
 	paths := strings.Split(key, b.keyDelim)
-	m := mmap.DeepSearchInMap(b.data, paths[:len(paths)-1]...)
+	m := gmap.DeepSearchInMap(b.data, paths[:len(paths)-1]...)
 	return m[paths[len(paths)-1]]
 }
